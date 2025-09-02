@@ -1740,12 +1740,10 @@ public class AutonomousCommands {
     LoggedAutoRoutine routine = drive.getAutoFactory().newRoutine("autoBRight");
     LoggedAutoTrajectory path1 =
         routine
-            .trajectory("B_RIGHT_PATH1")
-            .bindEvent("Funnel", Commands.runOnce(() -> RobotState.setAutoClapOverride(true)));
+            .trajectory("B_RIGHT_PATH1");
     LoggedAutoTrajectory path2 =
         routine
-            .trajectory("B_RIGHT_PATH2")
-            .bindEvent("Funnel", Commands.runOnce(() -> RobotState.setAutoClapOverride(true)));
+            .trajectory("B_RIGHT_PATH2");
 
     routine
         .active()
@@ -1800,6 +1798,70 @@ public class AutonomousCommands {
                     V3_EpsilonSuperstructureStates.STOW_DOWN,
                     V3_EpsilonSuperstructureStates.L4_SCORE,
                     0.5)));
+    return routine;
+  }
+
+  public static final LoggedAutoRoutine autoRight3PieceAlgae (
+    Drive drive, V3_EpsilonSuperstructure superstructure, Camera... cameras
+  ) {
+    LoggedAutoRoutine routine = drive.getAutoFactory().newRoutine("autoRight3PieceAlgae");
+    LoggedAutoTrajectory path1 =
+        routine
+            .trajectory("C_RIGHT_PATH1")
+            .bindEvent("Funnel", Commands.runOnce(() -> RobotState.setAutoClapOverride(true)));
+    LoggedAutoTrajectory path2 =
+        routine
+            .trajectory("C_RIGHT_PATH2")
+            .bindEvent("Funnel", Commands.runOnce(() -> RobotState.setAutoClapOverride(true)));
+    LoggedAutoTrajectory path3 =
+        routine
+            .trajectory("C_RIGHT_PATH3");
+
+    routine
+        .active()
+        .onTrue(
+            Commands.sequence(
+                path1.resetOdometry(),
+                Commands.runOnce(() -> RobotState.setReefPost(ReefPose.LEFT)),
+                path1.cmd(),
+                superstructure.runGoal(V3_EpsilonSuperstructureStates.L4_PREP),
+                Commands.parallel(
+                    DriveCommands.autoAlignReefCoral(drive, cameras),
+                    Commands.waitUntil(() -> superstructure.atGoal())),
+                superstructure.runActionWithTimeout(
+                    V3_EpsilonSuperstructureStates.STOW_DOWN,
+                    V3_EpsilonSuperstructureStates.L4_SCORE,
+                    0.25),
+                Commands.deadline(
+                    path2.cmd(),
+                    CompositeCommands.V3_EpsilonCompositeCommands.intakeCoralDriverSequence(
+                        superstructure, null),
+                    Commands.runOnce(() -> RobotState.setReefPost(ReefPose.RIGHT))),
+                Commands.runOnce(() -> RobotState.setAutoClapOverride(false)),
+                superstructure.runGoal(V3_EpsilonSuperstructureStates.L4_PREP),
+                Commands.parallel(
+                    DriveCommands.autoAlignReefCoral(drive, cameras),
+                    Commands.waitUntil(() -> superstructure.atGoal())),
+                superstructure.runActionWithTimeout(
+                    V3_EpsilonSuperstructureStates.STOW_DOWN,
+                    V3_EpsilonSuperstructureStates.L4_SCORE,
+                    0.25),
+                Commands.deadline(
+                    path3.cmd(),
+                    CompositeCommands.V3_EpsilonCompositeCommands.intakeCoralDriverSequence(
+                        superstructure, null),
+                    Commands.runOnce(() -> RobotState.setReefPost(ReefPose.LEFT))),
+                Commands.runOnce(() -> RobotState.setAutoClapOverride(false)),
+                superstructure.runGoal(V3_EpsilonSuperstructureStates.L4_PREP),
+                Commands.parallel(
+                    DriveCommands.autoAlignReefCoral(drive, cameras),
+                    Commands.waitUntil(() -> superstructure.atGoal())),
+                superstructure.runActionWithTimeout(
+                    V3_EpsilonSuperstructureStates.STOW_DOWN,
+                    V3_EpsilonSuperstructureStates.L4_SCORE,
+                    0.5))
+        );
+
     return routine;
   }
 }
